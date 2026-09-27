@@ -61,7 +61,7 @@ func main() {
 		jsonOut(w, http.StatusOK, map[string]any{"status": "healthy", "time": time.Now().UTC().Format(time.RFC3339)})
 	})
 	mux.HandleFunc("GET /v1/system/status", func(w http.ResponseWriter, r *http.Request) {
-		jsonOut(w, http.StatusOK, systemStatus{Mode: "REAL", Tunnel: "NOT_CONFIGURED", API: "ONLINE"})
+		jsonOut(w, http.StatusOK, map[string]any{"mode": "REAL", "tunnel": "NOT_CONFIGURED", "api": "ONLINE", "engineState": "UNSUPPORTED", "telemetry": map[string]uint64{"packetsFromTun": 0, "packetsToTun": 0, "encryptedBytesSent": 0, "encryptedBytesReceived": 0}})
 	})
 	mux.HandleFunc("GET /v1/nodes", func(w http.ResponseWriter, r *http.Request) {
 		registry.MarkStaleOffline(time.Now().UTC(), 90*time.Second)
