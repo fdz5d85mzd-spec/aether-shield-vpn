@@ -7,30 +7,39 @@ on:
 jobs:
   web:
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: aether-shield-web } }
+    defaults:
+      run:
+        working-directory: aether-shield-web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: aether-shield-web/package-lock.json }
+        with:
+          node-version: 22
       - run: npm install
       - run: npm run typecheck
       - run: npm run build
   go:
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: aether-shield-server } }
+    defaults:
+      run:
+        working-directory: aether-shield-server
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: { go-version: '1.22' }
+        with:
+          go-version: '1.22'
       - run: go vet ./...
       - run: go test ./...
   rust:
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: aether-shield-core } }
+    defaults:
+      run:
+        working-directory: aether-shield-core
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        with: { components: rustfmt, clippy }
+        with:
+          components: rustfmt, clippy
       - run: cargo fmt --check
       - run: cargo check
       - run: cargo clippy -- -D warnings
