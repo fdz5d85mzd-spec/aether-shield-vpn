@@ -1,7 +1,9 @@
 pub mod android;
 pub mod ffi;
 pub mod policy;
+pub mod session;
 pub mod telemetry;
+pub mod transport;
 pub mod tunnel;
 
 #[no_mangle]
