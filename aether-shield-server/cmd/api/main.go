@@ -53,7 +53,9 @@ func main() {
 	registry := nodes.NewRegistry()
 	provisioner := sessions.NewProvisioner(registry)
 	commands := nodes.NewCommandQueue()
+	sessionStore := sessions.NewStore()
 	mux := http.NewServeMux()
+	commandSessions := make(map[string]string)
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		jsonOut(w, http.StatusOK, map[string]any{"status": "healthy", "time": time.Now().UTC().Format(time.RFC3339)})
@@ -128,6 +130,27 @@ func main() {
 			return
 		}
 		jsonOut(w, http.StatusOK, cmd)
+		// Reconcile the corresponding session after a node ACK.
+		// The current in-memory store is intentionally process-local until persistent storage is added.
+		for _, sessionID := range commandSessions {
+			if session, ok := sessionStore.Get(sessionID); ok && session.CommandID == cmd.ID {
+				_, _ = sessionStore.SetResult(sessionID, cmd.Status == nodes.CommandApplied, cmd.Error)
+			}
+		}
+	})
+	mux.HandleFunc("GET /v1/tunnel/session/{id}", func(w http.ResponseWriter, r *http.Request) {
+		session, ok := sessionStore.Get(r.PathValue("id"))
+		if !ok {
+			jsonOut(w, http.StatusNotFound, map[string]string{"error": "session_not_found"})
+			return
+		}
+		if session.State != sessions.StateReady {
+			jsonOut(w, http.StatusOK, map[string]any{
+				"id": session.ID, "state": session.State, "error": session.Error, "updatedAt": session.UpdatedAt,
+			})
+			return
+		}
+		jsonOut(w, http.StatusOK, session)
 	})
 	mux.HandleFunc("POST /v1/tunnel/session", func(w http.ResponseWriter, r *http.Request) {
 		var req sessionRequest
@@ -150,9 +173,17 @@ func main() {
 			jsonOut(w, http.StatusServiceUnavailable, map[string]string{"status": "COMMAND_QUEUE_FAILED"})
 			return
 		}
+		session, err := sessionStore.Create(sessions.Session{
+			CommandID: cmd.ID, NodeID: p.NodeID, ClientPublicKey: req.ClientPublicKey,
+			ClientAddress: p.ClientAddress, Endpoint: p.Endpoint, ServerPublicKey: p.ServerPublicKey,
+		})
+		if err != nil {
+			jsonOut(w, http.StatusServiceUnavailable, map[string]string{"status": "SESSION_STORE_FAILED"})
+			return
+		}
+		commandSessions[cmd.ID] = session.ID
 		jsonOut(w, http.StatusAccepted, map[string]any{
-			"nodeId": p.NodeID, "endpoint": p.Endpoint, "serverPublicKey": p.ServerPublicKey,
-			"clientAddress": p.ClientAddress, "status": "PENDING_NODE_APPLY", "commandId": cmd.ID,
+			"sessionId": session.ID, "status": session.State, "commandId": cmd.ID,
 		})
 	})
 
