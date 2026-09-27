@@ -19,12 +19,24 @@ pub struct TunnelConfig {
 
 impl TunnelConfig {
     pub fn validate(&self) -> Result<(), &'static str> {
-        if self.private_key.trim().is_empty() { return Err("private key is required"); }
-        if self.addresses.is_empty() { return Err("at least one tunnel address is required"); }
-        if self.peer.public_key.trim().is_empty() { return Err("peer public key is required"); }
-        if self.peer.endpoint.trim().is_empty() { return Err("peer endpoint is required"); }
-        if self.peer.allowed_ips.is_empty() { return Err("at least one allowed IP is required"); }
-        if !(576..=9000).contains(&self.mtu) { return Err("mtu outside supported range"); }
+        if self.private_key.trim().is_empty() {
+            return Err("private key is required");
+        }
+        if self.addresses.is_empty() {
+            return Err("at least one tunnel address is required");
+        }
+        if self.peer.public_key.trim().is_empty() {
+            return Err("peer public key is required");
+        }
+        if self.peer.endpoint.trim().is_empty() {
+            return Err("peer endpoint is required");
+        }
+        if self.peer.allowed_ips.is_empty() {
+            return Err("at least one allowed IP is required");
+        }
+        if !(576..=9000).contains(&self.mtu) {
+            return Err("mtu outside supported range");
+        }
         Ok(())
     }
 }
@@ -32,6 +44,7 @@ impl TunnelConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     fn valid() -> TunnelConfig {
         TunnelConfig {
             private_key: "runtime-secret-not-a-real-key".into(),
@@ -46,7 +59,23 @@ mod tests {
             },
         }
     }
-    #[test] fn valid_shape_passes(){ assert!(valid().validate().is_ok()); }
-    #[test] fn missing_private_key_fails(){ let mut c=valid(); c.private_key.clear(); assert!(c.validate().is_err()); }
-    #[test] fn unreasonable_mtu_fails(){ let mut c=valid(); c.mtu=100; assert!(c.validate().is_err()); }
+
+    #[test]
+    fn valid_shape_passes() {
+        assert!(valid().validate().is_ok());
+    }
+
+    #[test]
+    fn missing_private_key_fails() {
+        let mut config = valid();
+        config.private_key.clear();
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn unreasonable_mtu_fails() {
+        let mut config = valid();
+        config.mtu = 100;
+        assert!(config.validate().is_err());
+    }
 }
