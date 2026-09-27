@@ -83,3 +83,23 @@ pub extern "C" fn aether_tunnel_stop() -> i32 {
         Err(_) => -3,
     }
 }
+
+
+/// Native engine status code.
+/// 0 = unsupported/not integrated, 1 = ready, 2 = active, 3 = failed.
+/// The current production-safe build reports unsupported until a reviewed
+/// packet engine is wired into the runtime.
+#[no_mangle]
+pub extern "C" fn aether_engine_state() -> i32 {
+    0
+}
+
+#[no_mangle]
+pub extern "C" fn aether_encrypted_bytes_sent() -> u64 {
+    0
+}
+
+#[no_mangle]
+pub extern "C" fn aether_encrypted_bytes_received() -> u64 {
+    0
+}
