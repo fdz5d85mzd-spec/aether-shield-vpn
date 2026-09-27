@@ -102,3 +102,31 @@ pub extern "C" fn aether_encrypted_bytes_sent() -> u64 {
 pub extern "C" fn aether_encrypted_bytes_received() -> u64 {
     0
 }
+
+
+#[no_mangle]
+pub extern "C" fn aether_wireguard_engine_compiled() -> i32 {
+    if crate::capabilities::capabilities().wireguard_engine_compiled {
+        1
+    } else {
+        0
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn aether_packet_forwarding_available() -> i32 {
+    if crate::capabilities::capabilities().packet_forwarding_available {
+        1
+    } else {
+        0
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn aether_post_quantum_available() -> i32 {
+    if crate::capabilities::capabilities().post_quantum_available {
+        1
+    } else {
+        0
+    }
+}
