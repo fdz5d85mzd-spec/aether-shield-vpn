@@ -17,6 +17,15 @@ pub extern "system" fn Java_com_aethershield_vpn_AetherVpnService_nativeTunnelSt
 
 #[cfg(target_os = "android")]
 #[no_mangle]
+pub extern "system" fn Java_com_aethershield_vpn_AetherVpnService_nativeTransportConnect(
+    _env: JNIEnv,
+    _this: JObject,
+) -> jint {
+    crate::ffi::aether_transport_connect()
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
 pub extern "system" fn Java_com_aethershield_vpn_AetherVpnService_nativeTunnelStop(
     _env: JNIEnv,
     _this: JObject,
