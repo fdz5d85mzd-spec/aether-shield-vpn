@@ -101,12 +101,8 @@ pub extern "system" fn Java_com_aethershield_vpn_AetherVpnService_nativeConfigur
         Err(_) => return -11,
     };
 
-    let config = crate::ffi::build_runtime_config(
-        STANDARD.encode(private),
-        address,
-        endpoint,
-        server_public_key,
-    );
+    let config =
+        crate::ffi::build_runtime_config(STANDARD.encode(private), address, endpoint, server_public_key);
     match crate::ffi::set_runtime_config(config) {
         Ok(()) => 0,
         Err(_) => -12,
