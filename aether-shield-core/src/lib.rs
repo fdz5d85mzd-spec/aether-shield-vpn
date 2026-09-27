@@ -6,6 +6,7 @@ pub mod keys;
 pub mod policy;
 pub mod runtime;
 pub mod session;
+pub mod status;
 pub mod telemetry;
 pub mod transport;
 pub mod tunnel;
