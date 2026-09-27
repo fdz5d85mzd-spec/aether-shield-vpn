@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+target/
+bin/
+*.exe
+.dart_tool/
+build/
+*.apk
+*.ipa
+.idea/
+.vscode/
+.DS_Store
