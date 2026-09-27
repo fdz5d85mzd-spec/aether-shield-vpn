@@ -1,3 +1,4 @@
+pub mod android;
 pub mod ffi;
 pub mod policy;
 pub mod telemetry;
