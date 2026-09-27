@@ -1,7 +1,7 @@
 #[cfg(target_os = "android")]
-use jni::objects::JObject;
+use jni::objects::{JByteArray, JObject, JString};
 #[cfg(target_os = "android")]
-use jni::sys::jint;
+use jni::sys::{jbyteArray, jint, jstring};
 #[cfg(target_os = "android")]
 use jni::JNIEnv;
 
@@ -31,4 +31,43 @@ pub extern "system" fn Java_com_aethershield_vpn_AetherVpnService_nativeTunnelSt
     _this: JObject,
 ) -> jint {
     crate::ffi::aether_tunnel_stop()
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "system" fn Java_com_aethershield_vpn_NativeKeys_nativeGeneratePrivateKey(
+    env: JNIEnv,
+    _this: JObject,
+) -> jbyteArray {
+    let pair = match crate::keys::KeyPair::generate() {
+        Ok(pair) => pair,
+        Err(_) => return std::ptr::null_mut(),
+    };
+    match env.byte_array_from_slice(&pair.private_bytes()) {
+        Ok(array) => array.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "system" fn Java_com_aethershield_vpn_NativeKeys_nativePublicKey(
+    mut env: JNIEnv,
+    _this: JObject,
+    private_key: JByteArray,
+) -> jstring {
+    let bytes = match env.convert_byte_array(private_key) {
+        Ok(bytes) if bytes.len() == 32 => bytes,
+        _ => return std::ptr::null_mut(),
+    };
+    let mut key = [0u8; 32];
+    key.copy_from_slice(&bytes);
+    let pair = crate::keys::KeyPair::from_private_bytes(key);
+    match env.new_string(pair.public_base64()) {
+        Ok(value) => {
+            let raw: JString = value;
+            raw.into_raw()
+        }
+        Err(_) => std::ptr::null_mut(),
+    }
 }
