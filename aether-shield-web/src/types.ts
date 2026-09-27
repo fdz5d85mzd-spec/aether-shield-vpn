@@ -26,3 +26,9 @@ export interface SystemStatus {
   engineState?:EngineState;
   telemetry?:EngineTelemetry;
 }
+
+export interface CoreCapabilities {
+  wireguardEngineCompiled:boolean;
+  packetForwardingAvailable:boolean;
+  postQuantumAvailable:boolean;
+}
