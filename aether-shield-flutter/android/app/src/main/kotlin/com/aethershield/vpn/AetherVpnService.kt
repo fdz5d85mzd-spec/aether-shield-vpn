@@ -6,7 +6,8 @@ import android.os.ParcelFileDescriptor
 
 class AetherVpnService : VpnService() {
     private var tun: ParcelFileDescriptor? = null
-    private var nativeStarted = false
+    private var nativeTunAttached = false
+    private var transportConnected = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (tun != null) return START_STICKY
@@ -19,31 +20,38 @@ class AetherVpnService : VpnService() {
             .establish() ?: return START_NOT_STICKY
 
         tun = established
-        val result = nativeTunnelStart(established.fd)
-        nativeStarted = result == 0
-
-        if (!nativeStarted) {
-            established.close()
-            tun = null
-            stopSelf()
+        nativeTunAttached = nativeTunnelStart(established.fd) == 0
+        if (!nativeTunAttached) {
+            cleanup()
             return START_NOT_STICKY
         }
 
-        // Native lifecycle is running, but packet forwarding remains unimplemented in Rust.
+        transportConnected = nativeTransportConnect() == 0
+        if (!transportConnected) {
+            // Correct behavior for the current scaffold: a TUN interface alone is not a VPN.
+            cleanup()
+            return START_NOT_STICKY
+        }
+
         return START_STICKY
     }
 
     override fun onDestroy() {
-        if (nativeStarted) {
-            nativeTunnelStop()
-            nativeStarted = false
-        }
-        tun?.close()
-        tun = null
+        cleanup()
         super.onDestroy()
     }
 
+    private fun cleanup() {
+        if (nativeTunAttached) nativeTunnelStop()
+        nativeTunAttached = false
+        transportConnected = false
+        tun?.close()
+        tun = null
+        stopSelf()
+    }
+
     private external fun nativeTunnelStart(tunFd: Int): Int
+    private external fun nativeTransportConnect(): Int
     private external fun nativeTunnelStop(): Int
 
     companion object {
