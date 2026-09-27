@@ -32,3 +32,15 @@ Production UI must never silently substitute simulated telemetry or PASS results
 ## Security principles
 
 No production private keys, access tokens, certificates, or credentials belong in git. Cryptographic claims must be backed by implemented and tested primitives. Node availability and audit PASS states must come from real evidence, not timers or random values.
+
+
+## Build capabilities
+
+The Rust core is fail-closed by default. The optional `wireguard-engine` Cargo feature is a reserved integration boundary for a reviewed packet engine; enabling the feature alone does **not** mean packet forwarding is available.
+
+CI validates both:
+
+- the default core build;
+- the `wireguard-engine` feature build.
+
+Runtime capability reporting remains authoritative: `packet_forwarding_available` stays false until a real backend is integrated and verified active. Post-quantum support is not implemented.
