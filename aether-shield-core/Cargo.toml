@@ -6,6 +6,10 @@ edition = "2021"
 [lib]
 crate-type = ["rlib", "cdylib", "staticlib"]
 
+[features]
+default = []
+wireguard-engine = []
+
 [dependencies]
 base64 = "0.22"
 getrandom = "0.2"
