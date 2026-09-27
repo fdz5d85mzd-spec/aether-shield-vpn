@@ -52,6 +52,7 @@ func authorizedNode(r *http.Request) bool {
 func main() {
 	registry := nodes.NewRegistry()
 	provisioner := sessions.NewProvisioner(registry)
+	commands := nodes.NewCommandQueue()
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +95,40 @@ func main() {
 		_ = registry.Heartbeat(req.ID, now)
 		jsonOut(w, http.StatusOK, map[string]any{"status": "ONLINE", "lastSeen": now})
 	})
+	mux.HandleFunc("GET /v1/nodes/{id}/commands", func(w http.ResponseWriter, r *http.Request) {
+		if !authorizedNode(r) {
+			jsonOut(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		nodeID := r.PathValue("id")
+		if _, ok := registry.Get(nodeID); !ok {
+			jsonOut(w, http.StatusNotFound, map[string]string{"error": "node_not_found"})
+			return
+		}
+		jsonOut(w, http.StatusOK, commands.Poll(nodeID))
+	})
+	mux.HandleFunc("POST /v1/nodes/{id}/commands/{commandId}/ack", func(w http.ResponseWriter, r *http.Request) {
+		if !authorizedNode(r) {
+			jsonOut(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+			return
+		}
+		var ack struct {
+			Applied bool   `json:"applied"`
+			Error   string `json:"error"`
+		}
+		dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10))
+		dec.DisallowUnknownFields()
+		if err := dec.Decode(&ack); err != nil {
+			jsonOut(w, http.StatusBadRequest, map[string]string{"error": "invalid_request"})
+			return
+		}
+		cmd, err := commands.Ack(r.PathValue("id"), r.PathValue("commandId"), ack.Applied, ack.Error)
+		if err != nil {
+			jsonOut(w, http.StatusNotFound, map[string]string{"error": "command_not_found"})
+			return
+		}
+		jsonOut(w, http.StatusOK, cmd)
+	})
 	mux.HandleFunc("POST /v1/tunnel/session", func(w http.ResponseWriter, r *http.Request) {
 		var req sessionRequest
 		dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
@@ -108,7 +143,17 @@ func main() {
 			jsonOut(w, http.StatusServiceUnavailable, map[string]string{"status": "NOT_CONFIGURED", "reason": err.Error()})
 			return
 		}
-		jsonOut(w, http.StatusOK, p)
+		cmd, err := commands.Enqueue(p.NodeID, nodes.Command{
+			Type: nodes.CommandAddPeer, ClientPublicKey: req.ClientPublicKey, ClientAddress: p.ClientAddress,
+		})
+		if err != nil {
+			jsonOut(w, http.StatusServiceUnavailable, map[string]string{"status": "COMMAND_QUEUE_FAILED"})
+			return
+		}
+		jsonOut(w, http.StatusAccepted, map[string]any{
+			"nodeId": p.NodeID, "endpoint": p.Endpoint, "serverPublicKey": p.ServerPublicKey,
+			"clientAddress": p.ClientAddress, "status": "PENDING_NODE_APPLY", "commandId": cmd.ID,
+		})
 	})
 
 	allowed := strings.TrimSpace(os.Getenv("AETHER_ALLOWED_ORIGINS"))
