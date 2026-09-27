@@ -1,6 +1,7 @@
 pub mod android;
 pub mod config;
 pub mod ffi;
+pub mod keys;
 pub mod policy;
 pub mod session;
 pub mod telemetry;
