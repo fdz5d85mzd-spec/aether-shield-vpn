@@ -71,3 +71,44 @@ pub extern "system" fn Java_com_aethershield_vpn_NativeKeys_nativePublicKey(
         Err(_) => std::ptr::null_mut(),
     }
 }
+
+#[cfg(target_os = "android")]
+#[no_mangle]
+pub extern "system" fn Java_com_aethershield_vpn_AetherVpnService_nativeConfigureTunnel(
+    mut env: JNIEnv,
+    _this: JObject,
+    private_key: JByteArray,
+    address: JString,
+    endpoint: JString,
+    server_public_key: JString,
+) -> jint {
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+
+    let private = match env.convert_byte_array(private_key) {
+        Ok(bytes) if bytes.len() == 32 => bytes,
+        _ => return -10,
+    };
+    let address: String = match env.get_string(&address) {
+        Ok(value) => value.into(),
+        Err(_) => return -11,
+    };
+    let endpoint: String = match env.get_string(&endpoint) {
+        Ok(value) => value.into(),
+        Err(_) => return -11,
+    };
+    let server_public_key: String = match env.get_string(&server_public_key) {
+        Ok(value) => value.into(),
+        Err(_) => return -11,
+    };
+
+    let config = crate::ffi::build_runtime_config(
+        STANDARD.encode(private),
+        address,
+        endpoint,
+        server_public_key,
+    );
+    match crate::ffi::set_runtime_config(config) {
+        Ok(()) => 0,
+        Err(_) => -12,
+    }
+}
