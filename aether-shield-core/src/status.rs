@@ -19,26 +19,20 @@ mod tests {
     #[test]
     fn only_active_engine_is_connected() {
         let empty = EngineTelemetry::default();
-        assert!(
-            !RuntimeStatus {
-                engine_state: EngineState::Unsupported,
-                telemetry: empty,
-            }
-            .is_connected()
-        );
-        assert!(
-            !RuntimeStatus {
-                engine_state: EngineState::Ready,
-                telemetry: empty,
-            }
-            .is_connected()
-        );
-        assert!(
-            RuntimeStatus {
-                engine_state: EngineState::Active,
-                telemetry: empty,
-            }
-            .is_connected()
-        );
+        assert!(!RuntimeStatus {
+            engine_state: EngineState::Unsupported,
+            telemetry: empty,
+        }
+        .is_connected());
+        assert!(!RuntimeStatus {
+            engine_state: EngineState::Ready,
+            telemetry: empty,
+        }
+        .is_connected());
+        assert!(RuntimeStatus {
+            engine_state: EngineState::Active,
+            telemetry: empty,
+        }
+        .is_connected());
     }
 }
