@@ -84,7 +84,6 @@ pub extern "C" fn aether_tunnel_stop() -> i32 {
     }
 }
 
-
 /// Native engine status code.
 /// 0 = unsupported/not integrated, 1 = ready, 2 = active, 3 = failed.
 /// The current production-safe build reports unsupported until a reviewed
